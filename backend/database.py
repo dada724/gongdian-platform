@@ -87,10 +87,61 @@ def init_db():
     )
     """)
 
+    # faults 表（故障数据）------------------------------------------------
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS faults (
+        id                INTEGER PRIMARY KEY AUTOINCREMENT,
+        date              TEXT,
+        dept              TEXT    DEFAULT '',
+        report_time       TEXT    DEFAULT '',
+        line              TEXT    DEFAULT '',
+        fault_point       TEXT    DEFAULT '',
+        device_name       TEXT    DEFAULT '',
+        fault_desc        TEXT    DEFAULT '',
+        repair_measure    TEXT    DEFAULT '',
+        repair_status     TEXT    DEFAULT '',
+        fault_type        TEXT    DEFAULT '',
+        repair_unit       TEXT    DEFAULT '',
+        duty_team         TEXT    DEFAULT '',
+        fault_level       TEXT    DEFAULT '',
+        register_loc      TEXT    DEFAULT '',
+        emergency_status  TEXT    DEFAULT '',
+        report_unit       TEXT    DEFAULT '',
+        arrive_time       TEXT    DEFAULT '',
+        fix_time          TEXT    DEFAULT '',
+        est_fix_time     TEXT    DEFAULT '',
+        response_min      TEXT    DEFAULT '',
+        daily_filter     TEXT    DEFAULT '',
+        promise_hours    TEXT    DEFAULT '',
+        order_no          TEXT    DEFAULT '',
+        order_closed      TEXT    DEFAULT '',
+        fault_process     TEXT    DEFAULT '',
+        trigger_type      TEXT    DEFAULT '',
+        indicator_name    TEXT    DEFAULT '',
+        assign_count      TEXT    DEFAULT '',
+        trigger_count     TEXT    DEFAULT '',
+        check_result      TEXT    DEFAULT '',
+        reporter          TEXT    DEFAULT '',
+        confirmer         TEXT    DEFAULT '',
+        last_editor       TEXT    DEFAULT '',
+        last_edit_time    TEXT    DEFAULT '',
+        photo_url         TEXT    DEFAULT '',
+        stat_cycle        TEXT    DEFAULT '',
+        field_extra       TEXT    DEFAULT '',
+        self_check        TEXT    DEFAULT ''   CHECK(self_check IN ('自检','非自检','')),
+        created_at        TEXT    NOT NULL
+    )
+    """)
+
     # 索引 ------------------------------------------------------------------
     cur.execute("CREATE INDEX IF NOT EXISTS idx_subs_module ON submodules(module_id)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_perms_user  ON module_permissions(user_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_perms_user   ON module_permissions(user_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_perms_module ON module_permissions(module_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_faults_date   ON faults(date)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_faults_line   ON faults(line)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_faults_type   ON faults(fault_type)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_faults_self  ON faults(self_check)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_faults_dept   ON faults(dept)")
 
     conn.commit()
     conn.close()

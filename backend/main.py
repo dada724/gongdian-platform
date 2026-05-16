@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 import os
 
 from database import init_db
-from routers import auth, modules, subs, users
+from routers import auth, modules, subs, users, faults, faults
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app.include_router(auth.router)
 app.include_router(modules.router)
 app.include_router(subs.router)
 app.include_router(users.router)
+app.include_router(faults.router)
 
 # ── 静态文件（前端）───────────────────────────────────────────
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "../frontend")
