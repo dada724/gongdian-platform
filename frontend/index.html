@@ -285,6 +285,7 @@ body.logged-in .login-page{display:none}
         <span class="role-tag" id="headerRole"></span>
       </span>
       <button class="btn" id="btnUserMgr" onclick="showUserMgr()" style="display:none">用户管理</button>
+      <button class="btn" id="btnFaultMgr" onclick="showFaultMgr()" style="display:none">故障管理</button>
       <button class="btn btn-sm" onclick="doLogout()">退出</button>
     </div>
   </div>
@@ -445,6 +446,54 @@ body.logged-in .login-page{display:none}
   </div>
 </div>
 
+<!-- 故障管理弹窗 -->
+<div class="modal-overlay" id="faultMgrModal">
+  <div class="modal" style="width:95%;max-width:1200px">
+    <h2>故障管理
+      <button class="btn btn-sm" onclick="showAddFaultForm()" style="float:right;font-size:12px">＋ 新增故障</button>
+      <button class="btn btn-sm" onclick="exportFaults()" style="float:right;font-size:12px;margin-right:6px">📤 导出</button>
+      <button class="btn btn-sm" onclick="document.getElementById('importFaultInput').click()" style="float:right;font-size:12px;margin-right:6px">📥 导入Excel</button>
+      <input type="file" id="importFaultInput" accept=".xlsx,.xls" style="display:none" onchange="importFaults(this)">
+    </h2>
+    <!-- 统计看板 -->
+    <div id="faultDashboard" style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap"></div>
+    <!-- 新增/编辑表单 -->
+    <div id="faultForm" style="display:none;margin-bottom:16px;padding:16px;background:rgba(10,14,26,0.6);border-radius:10px">
+      <h3 id="faultFormTitle" style="font-size:15px;margin-bottom:12px">新增故障</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:12px" id="faultFormFields"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveFault()">保存</button>
+        <button class="btn" onclick="cancelFaultForm()">取消</button>
+      </div>
+    </div>
+    <!-- 故障列表 -->
+    <div style="margin-bottom:12px">
+      <input type="text" id="faultSearch" placeholder="搜索故障..." style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:13px;width:260px" oninput="loadFaults()">
+      <select id="faultFilterLine" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:13px;margin-left:8px" onchange="loadFaults()">
+        <option value="">全部线路</option>
+      </select>
+      <select id="faultFilterType" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:13px;margin-left:8px" onchange="loadFaults()">
+        <option value="">全部类型</option>
+      </select>
+    </div>
+    <div id="faultListContent"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeFaultMgr()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 看板弹窗 -->
+<div class="modal-overlay" id="dashboardModal">
+  <div class="modal" style="width:95%;max-width:1400px">
+    <h2 id="dashboardTitle">故障统计看板</h2>
+    <div id="dashboardContent" style="min-height:300px"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeDashboard()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── 全局状态 ───────────────────────────────────────────────────────
 let API_BASE = '';   // 后端地址，空 = 同域
@@ -516,6 +565,7 @@ function applyPermissions(){
   const isEditor = (r==='developer' || r==='editor');
   document.getElementById('btnAddModule').style.display = isEditor ? '' : 'none';
   document.getElementById('btnUserMgr').style.display = r==='developer' ? '' : 'none';
+  document.getElementById('btnFaultMgr').style.display = isEditor ? '' : 'none';
   const roleTag = document.getElementById('headerRole');
   roleTag.textContent = {developer:'开发者',editor:'可编辑',viewer:'可查看'}[r]||r;
   roleTag.className = 'role-tag role-'+r.slice(0,4);
@@ -855,6 +905,180 @@ async function togglePerm(uid, modId, checked){
     method:'PUT', headers:authHeaders(),
     body: JSON.stringify({module_ids:perms})
   });
+}
+
+// ─── 故障管理 ─────────────────────────────────────────────────
+let editingFaultId = null;
+
+async function showFaultMgr(){
+  const r = CURRENT_USER.role;
+  document.getElementById('btnFaultMgr').style.display = (r==='developer'||r==='editor')?'inline-block':'none';
+  // 加载筛选选项
+  await loadFaultFilterOptions();
+  // 加载看板
+  await loadFaultDashboard();
+  // 加载列表
+  await loadFaults();
+  document.getElementById('faultMgrModal').classList.add('active');
+}
+
+function closeFaultMgr(){ document.getElementById('faultMgrModal').classList.remove('active'); }
+
+async function loadFaultFilterOptions(){
+  // 加载线路选项
+  const resp = await fetch('/api/faults?limit=1000', {headers:authHeaders()});
+  if(!resp.ok) return;
+  const data = await resp.json();
+  const faults = data.items||[];
+  const lines = [...new Set(faults.map(f=>f.line).filter(Boolean))].sort();
+  const types = [...new Set(faults.map(f=>f.fault_type).filter(Boolean))].sort();
+  let lineHtml = '<option value="">全部线路</option>';
+  lines.forEach(l=>{ lineHtml += '<option value="'+l+'">'+escHtml(l)+'</option>'; });
+  document.getElementById('faultFilterLine').innerHTML = lineHtml;
+  let typeHtml = '<option value="">全部类型</option>';
+  types.forEach(t=>{ typeHtml += '<option value="'+t+'">'+escHtml(t)+'</option>'; });
+  document.getElementById('faultFilterType').innerHTML = typeHtml;
+}
+
+async function loadFaultDashboard(){
+  const resp = await fetch('/api/dashboard/summary', {headers:authHeaders()});
+  if(!resp.ok){ document.getElementById('faultDashboard').innerHTML=''; return; }
+  const data = await resp.json();
+  let html = '<div style="flex:1;min-width:200px;padding:16px;background:rgba(79,172,254,0.08);border-radius:12px;border:1px solid rgba(79,172,254,0.2)"><div style="font-size:12px;color:var(--text2)">本月故障</div><div style="font-size:28px;font-weight:700;color:var(--accent)">'+data.this_month+'</div></div>';
+  html += '<div style="flex:1;min-width:200px;padding:16px;background:rgba(0,230,118,0.08);border-radius:12px;border:1px solid rgba(0,230,118,0.2)"><div style="font-size:12px;color:var(--text2)">本年故障</div><div style="font-size:28px;font-weight:700;color:var(--green)">'+data.this_year+'</div></div>';
+  html += '<div style="flex:1;min-width:200px;padding:16px;background:rgba(255,145,0,0.08);border-radius:12px;border:1px solid rgba(255,145,0,0.2)"><div style="font-size:12px;color:var(--text2)">自检率</div><div style="font-size:28px;font-weight:700;color:var(--orange)">'+(data.self_check_rate||0)+'%</div></div>';
+  html += '<div style="flex:1;min-width:200px;padding:16px;background:rgba(255,82,82,0.08);border-radius:12px;border:1px solid rgba(255,82,82,0.2)"><div style="font-size:12px;color:var(--text2)">未处理</div><div style="font-size:28px;font-weight:700;color:var(--danger)">'+data.unsolved+'</div></div>';
+  document.getElementById('faultDashboard').innerHTML = html;
+}
+
+async function loadFaults(){
+  const search = document.getElementById('faultSearch').value;
+  const line = document.getElementById('faultFilterLine').value;
+  const type = document.getElementById('faultFilterType').value;
+  let url = '/api/faults?limit=500';
+  if(line) url += '&line='+encodeURIComponent(line);
+  if(type) url += '&fault_type='+encodeURIComponent(type);
+  if(search) url += '&search='+encodeURIComponent(search);
+  const resp = await fetch(url, {headers:authHeaders()});
+  if(!resp.ok){ document.getElementById('faultListContent').innerHTML='<p style="color:var(--danger)">加载失败</p>'; return; }
+  const data = await resp.json();
+  const faults = data.items||[];
+  if(faults.length===0){ document.getElementById('faultListContent').innerHTML='<p style="color:var(--text2);padding:20px">暂无故障数据</p>'; return; }
+  let html = '<table class="user-table"><tr><th>日期</th><th>线路</th><th>车站</th><th>设备</th><th>故障类型</th><th>自检</th><th>部门</th><th>操作</th></tr>';
+  faults.forEach(f=>{
+    html += '<tr>';
+    html += '<td>'+(f.date||'')+'</td>';
+    html += '<td>'+(f.line||'')+'</td>';
+    html += '<td>'+(f.station||'')+'</td>';
+    html += '<td>'+(f.equipment||'')+'</td>';
+    html += '<td>'+(f.fault_type||'')+'</td>';
+    html += '<td>'+(f.self_check?'是':'否')+'</td>';
+    html += '<td>'+(f.dept||'')+'</td>';
+    html += '<td><button class="btn btn-sm" onclick="editFault('+f.id+')">编辑</button> <button class="btn btn-sm btn-danger" onclick="deleteFault('+f.id+')">删除</button></td>';
+    html += '</tr>';
+  });
+  html += '</table>';
+  document.getElementById('faultListContent').innerHTML = html;
+}
+
+function showAddFaultForm(){
+  editingFaultId = null;
+  document.getElementById('faultFormTitle').textContent = '新增故障';
+  // 构建表单字段（简化版，显示关键字段）
+  const fields = [
+    {key:'date', label:'日期', type:'date'},
+    {key:'line', label:'线路', type:'text'},
+    {key:'station', label:'车站', type:'text'},
+    {key:'equipment', label:'设备', type:'text'},
+    {key:'fault_type', label:'故障类型', type:'text'},
+    {key:'self_check', label:'是否自检', type:'checkbox'},
+    {key:'dept', label:'部门', type:'text'},
+    {key:'description', label:'故障描述', type:'textarea'},
+    {key:'solution', label:'解决方案', type:'textarea'}
+  ];
+  let html = '';
+  fields.forEach(f=>{
+    if(f.type==='textarea'){
+      html += '<div class="form-group"><label>'+f.label+'</label><textarea id="fault_'+f.key+'" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:13px;min-height:60px"></textarea></div>';
+    } else if(f.type==='checkbox'){
+      html += '<div class="form-group"><label><input type="checkbox" id="fault_'+f.key+'"> '+f.label+'</label></div>';
+    } else {
+      html += '<div class="form-group"><label>'+f.label+'</label><input type="'+f.type+'" id="fault_'+f.key+'" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:13px"></div>';
+    }
+  });
+  document.getElementById('faultFormFields').innerHTML = html;
+  document.getElementById('faultForm').style.display = 'block';
+}
+
+function cancelFaultForm(){ document.getElementById('faultForm').style.display = 'none'; }
+
+async function saveFault(){
+  const data = {};
+  ['date','line','station','equipment','fault_type','dept','description','solution'].forEach(k=>{
+    const el = document.getElementById('fault_'+k);
+    if(el) data[k] = el.value.trim();
+  });
+  const cb = document.getElementById('fault_self_check');
+  if(cb) data.self_check = cb.checked;
+  if(!data.date || !data.line){ alert('请填写日期和线路'); return; }
+  let resp;
+  if(editingFaultId){
+    resp = await fetch('/api/faults/'+editingFaultId, {method:'PUT',headers:authHeaders(),body:JSON.stringify(data)});
+  } else {
+    resp = await fetch('/api/faults', {method:'POST',headers:authHeaders(),body:JSON.stringify(data)});
+  }
+  if(!resp.ok){ alert((await resp.json()).detail||'保存失败'); return; }
+  document.getElementById('faultForm').style.display = 'none';
+  loadFaults();
+  loadFaultDashboard();
+}
+
+async function editFault(id){
+  const resp = await fetch('/api/faults/'+id, {headers:authHeaders()});
+  if(!resp.ok){ alert('加载失败'); return; }
+  const f = await resp.json();
+  editingFaultId = id;
+  document.getElementById('faultFormTitle').textContent = '编辑故障';
+  ['date','line','station','equipment','fault_type','dept','description','solution'].forEach(k=>{
+    const el = document.getElementById('fault_'+k);
+    if(el) el.value = f[k]||'';
+  });
+  const cb = document.getElementById('fault_self_check');
+  if(cb) cb.checked = f.self_check||false;
+  document.getElementById('faultForm').style.display = 'block';
+}
+
+async function deleteFault(id){
+  if(!confirm('确认删除该故障记录？')) return;
+  const resp = await fetch('/api/faults/'+id, {method:'DELETE',headers:authHeaders()});
+  if(!resp.ok){ alert('删除失败'); return; }
+  loadFaults();
+  loadFaultDashboard();
+}
+
+async function exportFaults(){
+  const resp = await fetch('/api/faults/export?'+Date.now(), {headers:authHeaders()});
+  if(!resp.ok){ alert('导出失败'); return; }
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'faults_export.xlsx';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function importFaults(input){
+  const file = input.files[0];
+  if(!file){ alert('请选择Excel文件'); return; }
+  const formData = new FormData();
+  formData.append('file', file);
+  const resp = await fetch('/api/faults/upload', {method:'POST',headers:{'Authorization':authHeaders()['Authorization']},body:formData});
+  const data = await resp.json();
+  alert('导入完成！新增：'+data.created+' 条');
+  loadFaults();
+  loadFaultDashboard();
+  input.value = '';
 }
 
 // ─── 启动 ─────────────────────────────────────────────────────────
