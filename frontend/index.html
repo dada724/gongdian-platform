@@ -248,6 +248,8 @@ body.logged-in .login-page{display:none}
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(79,172,254,0.3);border-radius:3px}
+#faultManagerContainer{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:20px;min-height:600px}
+#faultFrame{width:100%;height:calc(100vh - 180px);border:none;border-radius:10px;background:#0a0e1a}
 @media(max-width:768px){.main{padding:14px}.header{padding:10px 14px}.sub-grid{flex-direction:column}}
 </style>
 </head>
@@ -280,6 +282,7 @@ body.logged-in .login-page{display:none}
       <h1>工电中心一体化平台</h1>
     </div>
     <div class="header-right">
+      <button class="btn btn-primary" id="btnFaultMgr" onclick="showFaultManager()">📊 故障管理</button>
       <span class="user-badge">
         <span id="headerUser"></span>
         <span class="role-tag" id="headerRole"></span>
@@ -299,6 +302,13 @@ body.logged-in .login-page{display:none}
       <p>暂无模块，点击「新增模块」开始构建平台</p>
     </div>
     <div id="modulesContainer"></div>
+    <div id="faultManagerContainer" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h2 style="font-size:16px;font-weight:600;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">故障数据管理</h2>
+        <button class="btn btn-sm" onclick="hideFaultManager()">✕ 关闭</button>
+      </div>
+      <iframe id="faultFrame"></iframe>
+    </div>
   </div>
 </div>
 
@@ -515,6 +525,7 @@ function applyPermissions(){
   const r = CURRENT_USER.role;
   const isEditor = (r==='developer' || r==='editor');
   document.getElementById('btnAddModule').style.display = isEditor ? '' : 'none';
+  document.getElementById('btnFaultMgr').style.display = isEditor ? '' : 'none';
   document.getElementById('btnUserMgr').style.display = r==='developer' ? '' : 'none';
   document.getElementById('btnFaultMgr').style.display = isEditor ? '' : 'none';
   const roleTag = document.getElementById('headerRole');
@@ -930,6 +941,20 @@ function parseCSVLine(line){
   return result;
 }
 
+// ── 故障管理内嵌 ─────────────────────────────────────
+function showFaultManager(){
+  document.getElementById('modulesContainer').style.display='none';
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('faultManagerContainer').style.display='block';
+  const frame = document.getElementById('faultFrame');
+  frame.src = '/fault-table.html';
+  frame.style.height = (window.innerHeight - 180) + 'px';
+}
+function hideFaultManager(){
+  document.getElementById('faultManagerContainer').style.display='none';
+  document.getElementById('faultFrame').src = '';
+  render();
+}
 </script>
 </body>
 </html>

@@ -16,6 +16,9 @@ body{
   background:var(--bg);color:var(--text);
   min-height:100vh;overflow-x:auto;
 }
+body.embedded{padding:0;margin:0}
+body.embedded .header{display:none}
+body.embedded .main{padding-top:10px}
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:
@@ -144,7 +147,7 @@ body::before{
 </style>
 </head>
 <body>
-
+<script>if(window!==window.parent)document.body.classList.add('embedded');</script>
 <div class="header">
   <h1>📊 故障数据表</h1>
   <div class="toolbar">
