@@ -47,17 +47,29 @@ ifconfig | grep "inet "
 |--------|------|------|
 | admin  | admin123 | developer（全权限） |
 
-## 部署到新电脑
+## Windows 一键启动（推荐）
+
+双击项目根目录下的 `启动服务.bat`，自动完成：
+1. 检查 Python 环境
+2. 安装 / 更新依赖
+3. 初始化数据库
+4. 启动服务并显示局域网访问地址
+
+启动后访问：`http://localhost:8000`
+
+> 手机 / 其他电脑用显示的局域网地址访问（如 `http://192.168.1.100:8000`）
+
+## 手动启动
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/你的用户名/gongdian-platform.git
+git clone https://github.com/dada724/gongdian-platform.git
 cd gongdian-platform
 
 # 2. 安装依赖
 cd backend && pip install -r requirements.txt
 
-# 3. 启动
+# 3. 启动（绑定 0.0.0.0 允许局域网访问）
 python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
