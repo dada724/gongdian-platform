@@ -55,6 +55,23 @@ body::before{
 
 .main{padding:16px 20px;position:relative;z-index:1}
 
+/* 统计卡片 */
+.stats-bar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.stat-card{
+  flex:1;min-width:130px;padding:12px 14px;
+  background:var(--card-bg);border:1px solid var(--border);
+  border-radius:12px;
+}
+.stat-card .stat-label{font-size:11px;color:var(--text2)}
+.stat-card .stat-value{font-size:22px;font-weight:700;margin-top:4px}
+.stat-value.accent{color:var(--accent)}
+.stat-value.green{color:var(--green)}
+.stat-value.orange{color:var(--orange)}
+.stat-value.danger{color:var(--danger)}
+
+/* 工具栏 */
+.toolbar-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+
 /* 表格容器 */
 .table-wrapper{
   overflow-x:auto;
@@ -63,8 +80,8 @@ body::before{
 }
 
 /* 多维表格 */
-.data-table{width:100%;border-collapse:collapse;min-width:2000px}
-.data-table th{
+.data-table{width:100%;border-collapse:collapse;min-width:1800px}
+.data-table thead th{
   position:sticky;top:0;z-index:10;
   background:rgba(79,172,254,0.08);
   border-right:1px solid var(--border);
@@ -83,26 +100,17 @@ body::before{
 }
 .data-table tr:hover td{background:rgba(79,172,254,0.04)}
 .data-table tr.selected td{background:rgba(79,172,254,0.1)}
-
 .data-table td[contenteditable="true"]{
   background:rgba(79,172,254,0.08);
   outline:2px solid var(--accent);outline-offset:-2px;
   border-radius:4px;
 }
-
 .cell-checkbox{width:18px;height:18px;cursor:pointer}
 .add-col-header{
   min-width:36px;cursor:pointer;color:var(--text2);
   font-size:18px;transition:color .2s;
 }
 .add-col-header:hover{color:var(--accent)}
-
-/* 筛选行 */
-.filter-row input,.filter-row select{
-  width:100%;padding:3px 6px;font-size:11px;
-  border-radius:6px;border:1px solid var(--border);
-  background:rgba(10,14,26,0.8);color:var(--text);
-}
 
 /* 弹窗 */
 .modal-overlay{
@@ -113,7 +121,7 @@ body::before{
 .modal-overlay.active{display:flex}
 .modal{
   background:rgba(20,28,50,0.95);border:1px solid var(--border);
-  border-radius:16px;padding:24px;width:480px;max-width:92vw;
+  border-radius:16px;padding:24px;width:640px;max-width:92vw;
   max-height:85vh;overflow-y:auto;
 }
 .modal h2{font-size:16px;margin-bottom:16px;
@@ -127,43 +135,53 @@ body::before{
   color:var(--text);font-size:13px;outline:none;transition:border-color .2s;
 }
 .form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+.form-group textarea{resize:vertical;min-height:60px;font-family:inherit}
+.form-row{display:flex;gap:10px;flex-wrap:wrap}
+.form-row .form-group{flex:1;min-width:150px}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 
-/* 统计卡片 */
-.stats-bar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.stat-card{
-  flex:1;min-width:160px;padding:14px 16px;
-  background:var(--card-bg);border:1px solid var(--border);
-  border-radius:12px;
-}
-.stat-card .stat-label{font-size:11px;color:var(--text2)}
-.stat-card .stat-value{font-size:24px;font-weight:700;margin-top:4px}
-.stat-value.accent{color:var(--accent)}
-.stat-value.green{color:var(--green)}
-.stat-value.orange{color:var(--orange)}
-.stat-value.danger{color:var(--danger)}
-
 .selected-count{font-size:12px;color:var(--accent);margin-left:8px}
+
+@media(max-width:768px){.main{padding:10px}}
 </style>
 </head>
 <body>
 <script>if(window!==window.parent)document.body.classList.add('embedded');</script>
+
 <div class="header">
   <h1>📊 故障数据表</h1>
   <div class="toolbar">
-    <button class="btn btn-primary" onclick="showAddRowModal()">＋ 新增</button>
-    <button class="btn" onclick="deleteSelected()" id="btnDelete" style="display:none">🗑 删除</button>
-    <button class="btn" onclick="exportData()">📤 导出</button>
-    <button class="btn" onclick="document.getElementById('importInput').click()">📥 导入</button>
-    <input type="file" id="importInput" accept=".xlsx,.xls" style="display:none" onchange="importData(this)">
-    <button class="btn" onclick="showFieldManager()">⚙ 字段管理</button>
+    <button class="btn btn-primary" onclick="showAddModal()">＋ 新增故障</button>
+    <button class="btn" onclick="deleteSelected()" id="btnDelete" style="display:none">🗑 删除选中</button>
+    <button class="btn" onclick="exportExcel()">📤 导出Excel</button>
+    <button class="btn" onclick="document.getElementById('importInput').click()">📥 导入Excel</button>
+    <input type="file" id="importInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
     <span class="selected-count" id="selectedCount"></span>
   </div>
 </div>
 
 <div class="main">
   <!-- 统计看板 -->
-  <div class="stats-bar" id="statsBar"></div>
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card"><div class="stat-label">总故障数</div><div class="stat-value accent" id="statTotal">0</div></div>
+    <div class="stat-card"><div class="stat-label">本月故障</div><div class="stat-value orange" id="statMonth">0</div></div>
+    <div class="stat-card"><div class="stat-label">自检</div><div class="stat-value green" id="statSelfCheck">0</div></div>
+    <div class="stat-card"><div class="stat-label">非自检</div><div class="stat-value danger" id="statNotSelfCheck">0</div></div>
+  </div>
+
+  <!-- 筛选栏 -->
+  <div class="toolbar-bar">
+    <input type="text" id="filterLine" placeholder="筛选线路" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px;width:120px">
+    <input type="text" id="filterDept" placeholder="筛选部门" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px;width:120px">
+    <select id="filterSelfCheck" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px">
+      <option value="">全部（自检/非自检）</option>
+      <option value="自检">自检</option>
+      <option value="非自检">非自检</option>
+    </select>
+    <input type="text" id="filterKeyword" placeholder="搜索关键词" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px;width:150px">
+    <button class="btn btn-sm" onclick="doFilter()">筛选</button>
+    <button class="btn btn-sm" onclick="resetFilter()">重置</button>
+  </div>
 
   <!-- 数据表格 -->
   <div class="table-wrapper">
@@ -174,218 +192,188 @@ body::before{
   </div>
   <div id="emptyState" style="text-align:center;padding:60px 20px;color:var(--text2);display:none">
     <div style="font-size:48px;opacity:0.5;margin-bottom:16px">📋</div>
-    <p>暂无数据，点击「新增」开始录入</p>
+    <p>暂无数据，点击「＋ 新增故障」或「导入Excel」开始</p>
   </div>
 </div>
 
-<!-- 新增/编辑行弹窗 -->
-<div class="modal-overlay" id="rowModal">
-  <div class="modal" style="width:600px">
-    <h2 id="rowModalTitle">新增记录</h2>
-    <div id="rowFormFields" style="max-height:60vh;overflow-y:auto;padding-right:8px"></div>
-    <div class="form-actions">
-      <button class="btn" onclick="closeRowModal()">取消</button>
-      <button class="btn btn-primary" onclick="saveRow()">保存</button>
-    </div>
-  </div>
-</div>
-
-<!-- 字段管理弹窗 -->
-<div class="modal-overlay" id="fieldModal">
+<!-- 新增/编辑弹窗 -->
+<div class="modal-overlay" id="editModal">
   <div class="modal">
-    <h2>字段管理</h2>
-    <div id="fieldList" style="max-height:50vh;overflow-y:auto;margin-bottom:16px"></div>
-    <button class="btn btn-sm" onclick="showAddFieldModal()">＋ 添加字段</button>
+    <h2 id="editModalTitle">新增故障记录</h2>
+    <div style="max-height:55vh;overflow-y:auto;padding-right:8px">
+      <div class="form-row">
+        <div class="form-group"><label>日期</label><input type="date" id="f_date"></div>
+        <div class="form-group"><label>线路</label><input type="text" id="f_line" placeholder="如：1号线"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>故障点/车站</label><input type="text" id="f_fault_point" placeholder="如：天安门东站"></div>
+        <div class="form-group"><label>设备名称</label><input type="text" id="f_device_name" placeholder="如：断路器"></div>
+      </div>
+      <div class="form-group"><label>故障描述</label><textarea id="f_fault_desc" placeholder="故障现象描述"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>故障类型</label><input type="text" id="f_fault_type" placeholder="如：电气故障"></div>
+        <div class="form-group"><label>部门</label><input type="text" id="f_dept" placeholder="如：工电中心"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>责任班组</label><input type="text" id="f_duty_team" placeholder="如：检修一班"></div>
+        <div class="form-group"><label>维修单位</label><input type="text" id="f_repair_unit" placeholder="如：自检班组"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>维修状态</label>
+          <select id="f_repair_status">
+            <option value="">-- 请选择 --</option>
+            <option value="未处理">未处理</option>
+            <option value="处理中">处理中</option>
+            <option value="已修复">已修复</option>
+            <option value="无法修复">无法修复</option>
+          </select>
+        </div>
+        <div class="form-group"><label>故障等级</label>
+          <select id="f_fault_level">
+            <option value="">-- 请选择 --</option>
+            <option value="一级">一级（重大）</option>
+            <option value="二级">二级（较大）</option>
+            <option value="三级">三级（一般）</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>自检/非自检</label>
+          <select id="f_self_check">
+            <option value="">-- 请选择 --</option>
+            <option value="自检">自检</option>
+            <option value="非自检">非自检</option>
+          </select>
+        </div>
+        <div class="form-group"><label>填报人</label><input type="text" id="f_reporter" placeholder="填报人姓名"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>报修时间</label><input type="datetime-local" id="f_report_time"></div>
+        <div class="form-group"><label>到达时间</label><input type="datetime-local" id="f_arrive_time"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>修复时间</label><input type="datetime-local" id="f_fix_time"></div>
+        <div class="form-group"><label>响应分钟数</label><input type="number" id="f_response_min" placeholder="如：15"></div>
+      </div>
+      <div class="form-group"><label>维修措施</label><textarea id="f_repair_measure" placeholder="采取的维修措施"></textarea></div>
+      <div class="form-group"><label>故障经过</label><textarea id="f_fault_process" placeholder="故障处理经过"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>报修单位</label><input type="text" id="f_report_unit"></div>
+        <div class="form-group"><label>应急状态</label><input type="text" id="f_emergency_status"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>工单号</label><input type="text" id="f_order_no"></div>
+        <div class="form-group"><label>登记地点</label><input type="text" id="f_register_loc"></div>
+      </div>
+    </div>
     <div class="form-actions">
-      <button class="btn" onclick="closeFieldModal()">关闭</button>
-    </div>
-  </div>
-</div>
-
-<!-- 添加字段弹窗 -->
-<div class="modal-overlay" id="addFieldModal">
-  <div class="modal">
-    <h2>添加字段</h2>
-    <div class="form-group">
-      <label>字段名称</label>
-      <input type="text" id="newFieldName" placeholder="例如：故障等级">
-    </div>
-    <div class="form-group">
-      <label>字段类型</label>
-      <select id="newFieldType">
-        <option value="text">文本</option>
-        <option value="number">数字</option>
-        <option value="date">日期</option>
-        <option value="select">下拉选择</option>
-        <option value="checkbox">勾选框</option>
-        <option value="textarea">多行文本</option>
-      </select>
-    </div>
-    <div class="form-group" id="fieldOptionsGroup" style="display:none">
-      <label>选项（逗号分隔）</label>
-      <input type="text" id="newFieldOptions" placeholder="选项1,选项2,选项3">
-    </div>
-    <div class="form-actions">
-      <button class="btn" onclick="closeAddFieldModal()">取消</button>
-      <button class="btn btn-primary" onclick="addField()">添加</button>
+      <button class="btn" onclick="closeEditModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveRecord()">保存</button>
     </div>
   </div>
 </div>
 
 <script>
 // ─── 配置 ─────────────────────────────────────────────────────
-const API = '';  // 空=同域，可改为 http://your-api.com
+const API = '';  // 同域时为空
 let TOKEN = localStorage.getItem('gd_token') || '';
 let allData = [];
-let allFields = [];  // 当前显示的字段列表
+let filteredData = [];
 let selectedIds = new Set();
+let editingId = null;
 
-// 默认字段（从 database.py 的 faults 表结构）
-const DEFAULT_FIELDS = [
-  {key:'date', label:'日期', type:'date', width:100},
-  {key:'line', label:'线路', type:'text', width:80},
-  {key:'station', label:'车站', type:'text', width:80},
-  {key:'equipment', label:'设备名称', type:'text', width:120},
-  {key:'fault_type', label:'故障类型', type:'text', width:100},
-  {key:'fault_desc', label:'故障描述', type:'textarea', width:200},
-  {key:'dept', label:'部门', type:'text', width:100},
-  {key:'self_check', label:'自检', type:'select', width:70, options:['自检','非自检','']},
-  {key:'repair_status', label:'修复状态', type:'text', width:100},
-  {key:'fault_level', label:'故障等级', type:'text', width:80},
-  {key:'duty_team', label:'责任班组', type:'text', width:100},
-  {key:'reporter', label:'汇报人', type:'text', width:80},
+// 表格列定义（中文字段名 → 数据库字段名）
+const COLUMNS = [
+  {label:'日期',       key:'date',              width:'100px'},
+  {label:'线路',       key:'line',              width:'80px'},
+  {label:'故障点',     key:'fault_point',        width:'120px'},
+  {label:'设备名称',   key:'device_name',        width:'120px'},
+  {label:'故障描述',   key:'fault_desc',         width:'200px'},
+  {label:'故障类型',   key:'fault_type',         width:'100px'},
+  {label:'部门',       key:'dept',              width:'100px'},
+  {label:'责任班组',   key:'duty_team',          width:'100px'},
+  {label:'维修单位',   key:'repair_unit',        width:'100px'},
+  {label:'维修状态',   key:'repair_status',      width:'90px'},
+  {label:'故障等级',   key:'fault_level',        width:'90px'},
+  {label:'自检',       key:'self_check',         width:'80px'},
+  {label:'填报人',     key:'reporter',           width:'80px'},
+  {label:'报修时间',   key:'report_time',        width:'140px'},
+  {label:'到达时间',   key:'arrive_time',        width:'140px'},
+  {label:'修复时间',   key:'fix_time',           width:'140px'},
+  {label:'响应(分钟)', key:'response_min',       width:'90px'},
 ];
 
 // ─── 初始化 ───────────────────────────────────────────────────
-document.getElementById('newFieldType').addEventListener('change', function(){
-  document.getElementById('fieldOptionsGroup').style.display =
-    this.value==='select' ? '' : 'none';
-});
-
-loadFields();
 loadData();
-loadStats();
 
-// ─── 加载字段配置 ────────────────────────────────────────────
-function loadFields(){
-  const saved = localStorage.getItem('gd_fields');
-  if(saved){
-    allFields = JSON.parse(saved);
-  } else {
-    allFields = [...DEFAULT_FIELDS];
-    saveFields();
-  }
+// ─── 加载数据 ────────────────────────────────────────────────
+async function loadData(){
+  try {
+    const resp = await fetch('/api/faults', {headers:authHeaders()});
+    if(!resp.ok) { console.error('加载失败', resp.status); return; }
+    allData = await resp.json();
+    filteredData = [...allData];
+    renderTable();
+    renderStats();
+  } catch(e) { console.error('加载数据出错', e); }
 }
 
-function saveFields(){
-  localStorage.setItem('gd_fields', JSON.stringify(allFields));
-}
-
-// ─── API 请求 ─────────────────────────────────────────────────
 function authHeaders(){
   return {'Authorization':'Bearer '+TOKEN, 'Content-Type':'application/json'};
 }
 
-async function apiGet(path){
-  const resp = await fetch(API+path, {headers:authHeaders()});
-  if(resp.status===401){ alert('认证失败，请重新登录'); return null; }
-  if(!resp.ok){ alert('请求失败：'+resp.status); return null; }
-  return resp.json();
-}
-
-async function apiPost(path, body){
-  const resp = await fetch(API+path, {
-    method:'POST', headers:authHeaders(), body:JSON.stringify(body)
-  });
-  if(!resp.ok){ alert('请求失败：'+(await resp.json()).detail); return null; }
-  return resp.json();
-}
-
-async function apiPut(path, body){
-  const resp = await fetch(API+path, {
-    method:'PUT', headers:authHeaders(), body:JSON.stringify(body)
-  });
-  if(!resp.ok){ alert('请求失败：'+(await resp.json()).detail); return null; }
-  return resp.json();
-}
-
-async function apiDelete(path){
-  const resp = await fetch(API+path, {
-    method:'DELETE', headers:authHeaders()
-  });
-  if(!resp.ok){ alert('删除失败'); return false; }
-  return true;
-}
-
-// ─── 加载数据 ─────────────────────────────────────────────────
-async function loadData(){
-  const data = await apiGet('/api/faults?limit=2000');
-  if(!data) return;
-  allData = data.items||[];
-  renderTable();
-  loadStats();
-}
-
-// ─── 渲染表格 ─────────────────────────────────────────────────
+// ─── 渲染表格 ────────────────────────────────────────────────
 function renderTable(){
-  if(allData.length===0){
-    document.getElementById('emptyState').style.display='block';
-    document.getElementById('tableHeader').innerHTML='';
-    document.getElementById('tableBody').innerHTML='';
-    return;
-  }
-  document.getElementById('emptyState').style.display='none';
+  const thead = document.getElementById('tableHeader');
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
 
   // 表头
-  let th = '<th style="min-width:36px"><input type="checkbox" class="cell-checkbox" onchange="toggleSelectAll(this)"></th>';
-  allFields.forEach((f,i)=>{
-    th += `<th style="min-width:${f.width||100}px" data-field="${f.key}">
-      ${escHtml(f.label)}
-      <span class="th-actions">
-        <span style="cursor:pointer;font-size:10px" onclick="editField(${i})">✏</span>
-        <span style="cursor:pointer;font-size:10px;color:var(--danger)" onclick="deleteField(${i})">✕</span>
-      </span>
-    </th>`;
-  });
-  th += '<th class="add-col-header" onclick="showAddFieldModal()">＋</th>';
-  document.getElementById('tableHeader').innerHTML = '<tr>'+th+'</tr>';
-  document.getElementById('tableHeader').innerHTML += '<tr class="filter-row" id="filterRow"></tr>';
+  thead.innerHTML =
+    '<th style="width:40px"><input type="checkbox" class="cell-checkbox" onclick="toggleSelectAll(this)"></th>' +
+    COLUMNS.map(c => `<th style="min-width:${c.width}" title="${c.label}">${c.label}</th>`).join('') +
+    '<th style="width:80px">操作</th>';
 
-  // 筛选行
-  let fr = '<td></td>';
-  allFields.forEach(f=>{
-    fr += `<td><input type="text" placeholder="筛选..." oninput="filterTable()" data-filter="${f.key}"></td>`;
-  });
-  fr += '<td></td>';
-  document.getElementById('filterRow').innerHTML = fr;
+  if(filteredData.length===0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
 
-  // 表体
-  let tb = '';
-  allData.forEach(row=>{
-    const checked = selectedIds.has(row.id)?'checked':'';
-    tb += `<tr data-id="${row.id}" class="${selectedIds.has(row.id)?'selected':''}">`;
-    tb += `<td><input type="checkbox" class="cell-checkbox" ${checked} onchange="toggleSelectOne(${row.id},this)"></td>`;
-    allFields.forEach(f=>{
-      let val = row[f.key]||'';
-      if(f.type==='checkbox'){
-        tb += `<td><input type="checkbox" ${val?'checked':''} onchange="quickEdit(${row.id},'${f.key}',this.checked)"></td>`;
-      } else if(f.type==='select'){
-        let opts = (f.options||[]).map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('');
-        tb += `<td><select onchange="quickEdit(${row.id},'${f.key}',this.value)" style="background:transparent;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px">
-          <option value="">-</option>${opts}</select></td>`;
-      } else {
-        tb += `<td title="${escHtml(String(val))}" ondblclick="makeEditable(this,${row.id},'${f.key}')">${escHtml(String(val))}</td>`;
-      }
-    });
-    tb += '<td></td>';
-    tb += '</tr>';
-  });
-  document.getElementById('tableBody').innerHTML = tb;
+  tbody.innerHTML = filteredData.map(row => {
+    const isSelected = selectedIds.has(row.id);
+    return '<tr class="'+(isSelected?'selected':'')+'">' +
+      '<td><input type="checkbox" class="cell-checkbox" '+(isSelected?'checked':'')+' onchange="toggleSelect('+row.id+',this.checked)"></td>' +
+      COLUMNS.map(c => {
+        const val = row[c.key] || '';
+        return '<td title="'+escH(val)+'" onclick="makeEditable(this,'+row.id+',\''+c.key+'\')">'+escH(val)+'</td>';
+      }).join('') +
+      '<td><button class="btn btn-sm" onclick="editRecord('+row.id+')">✏</button> <button class="btn btn-sm btn-danger" onclick="deleteOne('+row.id+')">🗑</button></td>' +
+    '</tr>';
+  }).join('');
 }
 
-// ─── 快速编辑（双击单元格）────────────────────────────────────
-function makeEditable(td, id, key){
-  const oldVal = td.textContent;
+// ─── 统计 ─────────────────────────────────────────────────────
+function renderStats(){
+  const total = allData.length;
+  const now = new Date();
+  const thisMonth = allData.filter(d => d.date && d.date.startsWith(now.toISOString().slice(0,7))).length;
+  const selfCheck = allData.filter(d => d.self_check==='自检').length;
+  const notSelfCheck = allData.filter(d => d.self_check==='非自检').length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statMonth').textContent = thisMonth;
+  document.getElementById('statSelfCheck').textContent = selfCheck;
+  document.getElementById('statNotSelfCheck').textContent = notSelfCheck;
+}
+
+// ─── 单元格编辑 ──────────────────────────────────────────────
+let editingCell = null;
+function makeEditable(td, id, field){
+  if(editingCell === td) return;
+  if(editingCell) cancelEdit();
+  editingCell = td;
+  const original = td.textContent;
   td.setAttribute('contenteditable','true');
   td.focus();
   // 选中文字
@@ -395,226 +383,243 @@ function makeEditable(td, id, key){
   sel.removeAllRanges();
   sel.addRange(range);
 
-  const finish = async ()=>{
-    td.removeAttribute('contenteditable');
+  td.onblur = async ()=>{
     const newVal = td.textContent.trim();
-    if(newVal !== oldVal){
-      await quickEdit(id, key, newVal);
+    if(newVal !== original){
+      await updateField(id, field, newVal);
     }
+    cancelEdit();
   };
-  td.onblur = finish;
-  td.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); td.blur(); } };
+  td.onkeydown = (e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); td.blur(); }
+    if(e.key==='Escape'){ td.textContent = original; td.blur(); }
+  };
 }
-
-async function quickEdit(id, key, value){
-  const row = allData.find(r=>r.id===id);
-  if(!row) return;
-  row[key] = value;
-  await apiPut('/api/faults/'+id, row);
-}
-
-// ─── 选择操作 ─────────────────────────────────────────────────
-function toggleSelectAll(master){
-  if(master.checked){
-    allData.forEach(r=>selectedIds.add(r.id));
-  } else {
-    selectedIds.clear();
+function cancelEdit(){
+  if(editingCell){
+    editingCell.removeAttribute('contenteditable');
+    editingCell.onblur = null;
+    editingCell.onkeydown = null;
+    editingCell = null;
   }
+}
+async function updateField(id, field, value){
+  const resp = await fetch('/api/faults/'+id, {
+    method:'PUT', headers:authHeaders(),
+    body: JSON.stringify({[field]: value})
+  });
+  if(resp.ok) loadData();
+}
+
+// ─── 选择 ─────────────────────────────────────────────────────
+function toggleSelect(id, checked){
+  if(checked) selectedIds.add(id); else selectedIds.delete(id);
+  updateSelection();
+}
+function toggleSelectAll(el){
+  const checked = el.checked;
+  filteredData.forEach(r => {
+    if(checked) selectedIds.add(r.id); else selectedIds.delete(r.id);
+  });
   renderTable();
-  updateSelectedCount();
+  updateSelection();
 }
-
-function toggleSelectOne(id, cb){
-  if(cb.checked) selectedIds.add(id);
-  else selectedIds.delete(id);
-  updateSelectedCount();
-}
-
-function updateSelectedCount(){
+function updateSelection(){
   const n = selectedIds.size;
-  document.getElementById('selectedCount').textContent = n>0 ? `已选 ${n} 条` : '';
-  document.getElementById('btnDelete').style.display = n>0?'inline-block':'none';
+  document.getElementById('btnDelete').style.display = n>0?'inline-flex':'none';
+  document.getElementById('selectedCount').textContent = n>0?`已选 ${n} 条`:'';
 }
 
+// ─── 新增/编辑弹窗 ────────────────────────────────────────────
+function showAddModal(){
+  editingId = null;
+  document.getElementById('editModalTitle').textContent = '新增故障记录';
+  clearForm();
+  document.getElementById('editModal').classList.add('active');
+}
+function editRecord(id){
+  const row = allData.find(d=>d.id===id);
+  if(!row) return;
+  editingId = id;
+  document.getElementById('editModalTitle').textContent = '编辑故障记录';
+  fillForm(row);
+  document.getElementById('editModal').classList.add('active');
+}
+function closeEditModal(){
+  document.getElementById('editModal').classList.remove('active');
+  editingId = null;
+}
+function clearForm(){
+  const ids = ['f_date','f_line','f_fault_point','f_device_name','f_fault_desc',
+    'f_fault_type','f_dept','f_duty_team','f_repair_unit','f_repair_status',
+    'f_fault_level','f_self_check','f_reporter','f_report_time',
+    'f_arrive_time','f_fix_time','f_response_min','f_repair_measure',
+    'f_fault_process','f_report_unit','f_emergency_status','f_order_no','f_register_loc'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.tagName==='SELECT' ? el.selectedIndex=0 : el.value='';
+  });
+}
+function fillForm(row){
+  setValue('f_date',             row.date||'');
+  setValue('f_line',            row.line||'');
+  setValue('f_fault_point',     row.fault_point||'');
+  setValue('f_device_name',     row.device_name||'');
+  setValue('f_fault_desc',      row.fault_desc||'');
+  setValue('f_fault_type',      row.fault_type||'');
+  setValue('f_dept',            row.dept||'');
+  setValue('f_duty_team',       row.duty_team||'');
+  setValue('f_repair_unit',     row.repair_unit||'');
+  setValue('f_repair_status',   row.repair_status||'');
+  setValue('f_fault_level',     row.fault_level||'');
+  setValue('f_self_check',       row.self_check||'');
+  setValue('f_reporter',        row.reporter||'');
+  setValue('f_report_time',      row.report_time||'');
+  setValue('f_arrive_time',     row.arrive_time||'');
+  setValue('f_fix_time',        row.fix_time||'');
+  setValue('f_response_min',     row.response_min||'');
+  setValue('f_repair_measure',  row.repair_measure||'');
+  setValue('f_fault_process',   row.fault_process||'');
+  setValue('f_report_unit',     row.report_unit||'');
+  setValue('f_emergency_status',row.emergency_status||'');
+  setValue('f_order_no',        row.order_no||'');
+  setValue('f_register_loc',    row.register_loc||'');
+}
+function setValue(id, val){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(el.tagName==='SELECT'){
+    for(let i=0;i<el.options.length;i++){
+      if(el.options[i].value===val){el.selectedIndex=i;return;}
+    }
+  } else {
+    el.value = val;
+  }
+}
+
+async function saveRecord(){
+  const data = {
+    date:             document.getElementById('f_date').value,
+    line:            document.getElementById('f_line').value,
+    fault_point:     document.getElementById('f_fault_point').value,
+    device_name:     document.getElementById('f_device_name').value,
+    fault_desc:      document.getElementById('f_fault_desc').value,
+    fault_type:      document.getElementById('f_fault_type').value,
+    dept:            document.getElementById('f_dept').value,
+    duty_team:       document.getElementById('f_duty_team').value,
+    repair_unit:     document.getElementById('f_repair_unit').value,
+    repair_status:   document.getElementById('f_repair_status').value,
+    fault_level:     document.getElementById('f_fault_level').value,
+    self_check:       document.getElementById('f_self_check').value,
+    reporter:        document.getElementById('f_reporter').value,
+    report_time:      document.getElementById('f_report_time').value,
+    arrive_time:     document.getElementById('f_arrive_time').value,
+    fix_time:        document.getElementById('f_fix_time').value,
+    response_min:    document.getElementById('f_response_min').value,
+    repair_measure:  document.getElementById('f_repair_measure').value,
+    fault_process:   document.getElementById('f_fault_process').value,
+    report_unit:     document.getElementById('f_report_unit').value,
+    emergency_status:document.getElementById('f_emergency_status').value,
+    order_no:        document.getElementById('f_order_no').value,
+    register_loc:    document.getElementById('f_register_loc').value,
+  };
+  // 清除空值
+  Object.keys(data).forEach(k=>{if(data[k]==='') delete data[k]});
+
+  let resp;
+  if(editingId){
+    resp = await fetch('/api/faults/'+editingId, {
+      method:'PUT', headers:authHeaders(),
+      body: JSON.stringify(data)
+    });
+  } else {
+    resp = await fetch('/api/faults', {
+      method:'POST', headers:authHeaders(),
+      body: JSON.stringify(data)
+    });
+  }
+  if(resp.ok){
+    closeEditModal();
+    loadData();
+  } else {
+    alert('保存失败：'+(await resp.json()).detail||'未知错误');
+  }
+}
+
+// ─── 删除 ─────────────────────────────────────────────────────
+async function deleteOne(id){
+  if(!confirm('确认删除该条记录？')) return;
+  const resp = await fetch('/api/faults/'+id, {method:'DELETE',headers:authHeaders()});
+  if(resp.ok) loadData();
+}
 async function deleteSelected(){
   if(selectedIds.size===0) return;
-  if(!confirm(`确认删除 ${selectedIds.size} 条记录？`)) return;
-  for(let id of selectedIds){
-    await apiDelete('/api/faults/'+id);
+  if(!confirm(`确认删除选中的 ${selectedIds.size} 条记录？`)) return;
+  for(const id of selectedIds){
+    await fetch('/api/faults/'+id, {method:'DELETE',headers:authHeaders()});
   }
   selectedIds.clear();
   loadData();
 }
 
-// ─── 新增/编辑弹窗 ────────────────────────────────────────────
-let editingRowId = null;
-
-function showAddRowModal(){
-  editingRowId = null;
-  document.getElementById('rowModalTitle').textContent = '新增记录';
-  buildRowForm();
-  document.getElementById('rowModal').classList.add('active');
-}
-
-function buildRowForm(row={}){
-  let html = '';
-  allFields.forEach(f=>{
-    const val = row[f.key]||'';
-    if(f.type==='textarea'){
-      html += `<div class="form-group"><label>${escHtml(f.label)}</label>
-        <textarea id="edit_${f.key}" style="min-height:60px">${escHtml(val)}</textarea></div>`;
-    } else if(f.type==='select'){
-      let opts = (f.options||[]).map(o=>
-        `<option ${val===o?'selected':''}>${o}</option>`
-      ).join('');
-      html += `<div class="form-group"><label>${escHtml(f.label)}</label>
-        <select id="edit_${f.key}"><option value="">-</option>${opts}</select></div>`;
-    } else if(f.type==='checkbox'){
-      html += `<div class="form-group"><label><input type="checkbox" id="edit_${f.key}" ${val?'checked':''}> ${escHtml(f.label)}</label></div>`;
-    } else {
-      html += `<div class="form-group"><label>${escHtml(f.label)}</label>
-        <input type="${f.type==='date'?'date':'text'}" id="edit_${f.key}" value="${escHtml(val)}"></div>`;
-    }
-  });
-  document.getElementById('rowFormFields').innerHTML = html;
-}
-
-async function saveRow(){
-  const data = {};
-  allFields.forEach(f=>{
-    const el = document.getElementById('edit_'+f.key);
-    if(!el) return;
-    if(f.type==='checkbox') data[f.key] = el.checked;
-    else data[f.key] = el.value;
-  });
-  if(!data.date) data.date = new Date().toISOString().slice(0,10);
-
-  if(editingRowId){
-    await apiPut('/api/faults/'+editingRowId, data);
-  } else {
-    await apiPost('/api/faults', data);
-  }
-  closeRowModal();
-  loadData();
-}
-
-function closeRowModal(){ document.getElementById('rowModal').classList.remove('active'); }
-
-// ─── 字段管理 ─────────────────────────────────────────────────
-function showFieldManager(){
-  let html = '';
-  allFields.forEach((f,i)=>{
-    html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
-      <span style="flex:1">${escHtml(f.label)} <span style="font-size:10px;color:var(--text2)">(${f.type})</span></span>
-      <button class="btn btn-sm" onclick="editField(${i})">编辑</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteField(${i})">删除</button>
-    </div>`;
-  });
-  document.getElementById('fieldList').innerHTML = html;
-  document.getElementById('fieldModal').classList.add('active');
-}
-function closeFieldModal(){ document.getElementById('fieldModal').classList.remove('active'); }
-
-function showAddFieldModal(){
-  document.getElementById('newFieldName').value='';
-  document.getElementById('newFieldType').value='text';
-  document.getElementById('newFieldOptions').value='';
-  document.getElementById('fieldOptionsGroup').style.display='none';
-  document.getElementById('addFieldModal').classList.add('active');
-}
-function closeAddFieldModal(){ document.getElementById('addFieldModal').classList.remove('active'); }
-
-async function addField(){
-  const name = document.getElementById('newFieldName').value.trim();
-  const type = document.getElementById('newFieldType').value;
-  if(!name){alert('请输入字段名称');return;}
-  const key = 'field_'+Date.now();
-  const field = {key, label:name, type, width:120};
-  if(type==='select'){
-    const opts = document.getElementById('newFieldOptions').value.split(',').map(s=>s.trim()).filter(Boolean);
-    field.options = opts;
-  }
-  allFields.push(field);
-  saveFields();
-  closeAddFieldModal();
-  renderTable();
-  // 提示：需要在后端也添加字段
-  alert('字段已添加到界面。\n\n如需持久化，请在后端数据库添加该字段。');
-}
-
-function deleteField(idx){
-  if(!confirm('删除字段「'+allFields[idx].label+'」？数据不会被删除，只是隐藏。')) return;
-  allFields.splice(idx,1);
-  saveFields();
-  showFieldManager();
-  renderTable();
-}
-
 // ─── 筛选 ─────────────────────────────────────────────────────
-function filterTable(){
-  const filters = {};
-  document.querySelectorAll('.filter-row input').forEach(inp=>{
-    const k = inp.getAttribute('data-filter');
-    if(inp.value) filters[k] = inp.value.toLowerCase();
-  });
-  const trs = document.querySelectorAll('#tableBody tr');
-  trs.forEach(tr=>{
-    let show = true;
-    const id = parseInt(tr.getAttribute('data-id'));
-    const row = allData.find(r=>r.id===id);
-    if(!row) return;
-    for(let k in filters){
-      const cellVal = String(row[k]||'').toLowerCase();
-      if(cellVal.indexOf(filters[k])===-1){ show=false; break; }
+function doFilter(){
+  const lineVal = document.getElementById('filterLine').value.trim().toLowerCase();
+  const deptVal = document.getElementById('filterDept').value.trim().toLowerCase();
+  const scVal   = document.getElementById('filterSelfCheck').value;
+  const kw      = document.getElementById('filterKeyword').value.trim().toLowerCase();
+
+  filteredData = allData.filter(row => {
+    if(lineVal && !(row.line||'').toLowerCase().includes(lineVal)) return false;
+    if(deptVal && !(row.dept||'').toLowerCase().includes(deptVal)) return false;
+    if(scVal   && row.self_check!==scVal) return false;
+    if(kw) {
+      const allText = COLUMNS.map(c=>row[c.key]||'').join(' ').toLowerCase();
+      if(!allText.includes(kw)) return false;
     }
-    tr.style.display = show?'':'none';
+    return true;
   });
+  selectedIds.clear();
+  renderTable();
+  updateSelection();
+}
+function resetFilter(){
+  document.getElementById('filterLine').value = '';
+  document.getElementById('filterDept').value = '';
+  document.getElementById('filterSelfCheck').value = '';
+  document.getElementById('filterKeyword').value = '';
+  filteredData = [...allData];
+  selectedIds.clear();
+  renderTable();
+  updateSelection();
 }
 
-// ─── 统计看板 ─────────────────────────────────────────────────
-async function loadStats(){
-  const data = await apiGet('/api/dashboard/summary');
-  if(!data){document.getElementById('statsBar').innerHTML='';return;}
-  let html = `<div class="stat-card"><div class="stat-label">本月故障</div><div class="stat-value accent">${data.this_month||0}</div></div>`;
-  html += `<div class="stat-card"><div class="stat-label">本年故障</div><div class="stat-value green">${data.this_year||0}</div></div>`;
-  html += `<div class="stat-card"><div class="stat-label">自检率</div><div class="stat-value orange">${(data.self_check_rate||0)}%</div></div>`;
-  html += `<div class="stat-card"><div class="stat-label">未处理</div><div class="stat-value danger">${data.unsolved||0}</div></div>`;
-  document.getElementById('statsBar').innerHTML = html;
+// ─── 导出 Excel ───────────────────────────────────────────────
+function exportExcel(){
+  window.open('/api/faults/export?token='+TOKEN, '_blank');
 }
 
-// ─── 导出 ─────────────────────────────────────────────────────
-async function exportData(){
-  const resp = await fetch(API+'/api/faults/export?'+Date.now(), {headers:authHeaders()});
-  if(!resp.ok){alert('导出失败');return;}
-  const blob = await resp.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href=url; a.download='faults_export.xlsx';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-}
-
-// ─── 导入 ─────────────────────────────────────────────────────
-async function importData(input){
+// ─── 导入 Excel ───────────────────────────────────────────────
+async function importExcel(input){
   const file = input.files[0];
-  if(!file){alert('请选择文件');return;}
-  const formData = new FormData();
-  formData.append('file', file);
-  const resp = await fetch(API+'/api/faults/upload', {
-    method:'POST',
-    headers:{'Authorization':authHeaders().Authorization},
-    body:formData
+  if(!file){ alert('请选择 Excel 文件'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  const resp = await fetch('/api/faults/import', {
+    method:'POST', headers:{'Authorization':'Bearer '+TOKEN}, body:fd
   });
-  const data = await resp.json();
-  alert('导入完成！新增：'+data.created+' 条');
-  loadData();
-  input.value='';
+  if(resp.ok){
+    const result = await resp.json();
+    alert('导入成功！新增 '+result.created+' 条，更新 '+result.updated+' 条');
+    loadData();
+  } else {
+    alert('导入失败：'+(await resp.json()).detail||'未知错误');
+  }
+  input.value = '';
 }
 
 // ─── 工具 ─────────────────────────────────────────────────────
-function escHtml(s){
-  const d=document.createElement('div'); d.textContent=s; return d.innerHTML;
-}
+function escH(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 </script>
 </body>
 </html>
