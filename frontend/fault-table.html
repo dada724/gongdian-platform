@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>故障数据表 - 工电中心</title>
+<title>故障数据表 - 工电中心生产管理平台</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -16,70 +16,58 @@ body{
   background:var(--bg);color:var(--text);
   min-height:100vh;overflow-x:auto;
 }
-body.embedded{padding:0;margin:0}
-body.embedded .header{display:none}
-body.embedded .main{padding-top:10px}
-body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:
-    linear-gradient(rgba(79,172,254,0.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(79,172,254,0.03) 1px,transparent 1px);
-  background-size:60px 60px;
-}
-.header{
+.top-nav{
   position:sticky;top:0;z-index:100;
   backdrop-filter:blur(20px);
   -webkit-backdrop-filter:blur(20px);
-  background:rgba(10,14,26,0.9);
+  background:rgba(10,14,26,0.95);
   border-bottom:1px solid var(--border);
   padding:10px 20px;display:flex;align-items:center;justify-content:space-between;
 }
-.header h1{font-size:16px;font-weight:600;
+.top-nav .left{display:flex;align-items:center;gap:12px}
+.top-nav .logo{font-size:18px;font-weight:700;
   background:linear-gradient(90deg,var(--accent),var(--accent2));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.top-nav .back-link{color:var(--text2);text-decoration:none;font-size:12px;transition:color .2s}
+.top-nav .back-link:hover{color:var(--accent)}
+.top-nav .right{display:flex;gap:8px;align-items:center}
 .btn{
   padding:6px 14px;border-radius:8px;border:1px solid var(--border);
   background:var(--card-bg);color:var(--text);cursor:pointer;
   font-size:12px;transition:all .2s;display:inline-flex;align-items:center;gap:4px;
+  white-space:nowrap;
 }
 .btn:hover{border-color:var(--accent)}
 .btn-primary{
   background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;
   box-shadow:0 0 16px rgba(79,172,254,0.25);
 }
+.btn-primary:hover{box-shadow:0 0 24px rgba(79,172,254,0.4)}
 .btn-danger{border-color:rgba(255,82,82,0.3);color:var(--danger)}
 .btn-danger:hover{border-color:var(--danger);background:rgba(255,82,82,0.1)}
 .btn-sm{padding:4px 10px;font-size:11px}
 .main{padding:16px 20px;position:relative;z-index:1}
-
-/* 统计卡片 */
 .stats-bar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .stat-card{
   flex:1;min-width:130px;padding:12px 14px;
   background:var(--card-bg);border:1px solid var(--border);
-  border-radius:12px;
+  border-radius:12px;transition:all .3s;
 }
+.stat-card:hover{border-color:rgba(100,140,255,0.4)}
 .stat-card .stat-label{font-size:11px;color:var(--text2)}
 .stat-card .stat-value{font-size:22px;font-weight:700;margin-top:4px}
 .stat-value.accent{color:var(--accent)}
 .stat-value.green{color:var(--green)}
 .stat-value.orange{color:var(--orange)}
 .stat-value.danger{color:var(--danger)}
-
-/* 工具栏 */
-.toolbar-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-
-/* 表格容器 */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 .table-wrapper{
   overflow-x:auto;
   border:1px solid var(--border);border-radius:12px;
-  background:var(--card-bg);backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
+  background:var(--card-bg);
+  max-height:calc(100vh - 280px);overflow-y:auto;
 }
-
-/* 数据表格 */
-.data-table{width:100%;border-collapse:collapse;min-width:1800px}
+.data-table{width:100%;border-collapse:collapse;min-width:2000px}
 .data-table thead th{
   position:sticky;top:0;z-index:10;
   background:rgba(79,172,254,0.08);
@@ -98,8 +86,6 @@ body::before{
 .data-table tr:hover td{background:rgba(79,172,254,0.04)}
 .data-table tr.selected td{background:rgba(79,172,254,0.1)}
 .cell-checkbox{width:18px;height:18px;cursor:pointer}
-
-/* 弹窗 */
 .modal-overlay{
   position:fixed;inset:0;z-index:2000;
   background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
@@ -109,7 +95,7 @@ body::before{
 .modal-overlay.active{display:flex}
 .modal{
   background:rgba(20,28,50,0.95);border:1px solid var(--border);
-  border-radius:16px;padding:24px;width:640px;max-width:92vw;
+  border-radius:16px;padding:24px;width:700px;max-width:92vw;
   max-height:85vh;overflow-y:auto;
 }
 .modal h2{font-size:16px;margin-bottom:16px;
@@ -128,24 +114,36 @@ body::before{
 .form-row .form-group{flex:1;min-width:150px}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .selected-count{font-size:12px;color:var(--accent);margin-left:8px}
+.field-list{margin-top:12px}
+.field-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px;margin-bottom:6px;
+  background:rgba(10,14,26,0.6);border-radius:8px;
+  border:1px solid var(--border);
+}
+.field-item label{font-size:12px;flex:1}
+.field-item select{padding:4px 8px;border-radius:6px;font-size:11px;
+  background:rgba(10,14,26,0.8);color:var(--text);border:1px solid var(--border)}
+.field-item .btn-sm{padding:3px 8px}
 @media(max-width:768px){.main{padding:10px}}
 </style>
 </head>
 <body>
-<script>if(window!==window.parent)document.body.classList.add('embedded');</script>
-
-<div class="header">
-  <h1>📊 故障数据表</h1>
-  <div class="toolbar">
+<div class="top-nav">
+  <div class="left">
+    <a href="/" class="back-link">← 返回主平台</a>
+    <span class="logo">📊 故障数据表</span>
+  </div>
+  <div class="right">
+    <button class="btn btn-sm" onclick="showFieldManager()">⚙️ 字段管理</button>
     <button class="btn btn-primary" onclick="showAddModal()">＋ 新增故障</button>
-    <button class="btn" onclick="deleteSelected()" id="btnDelete" style="display:none">🗑 删除选中</button>
+    <button class="btn" onclick="deleteSelected()" id="btnDelete" style="display:none">🗑️ 删除选中</button>
     <button class="btn" onclick="exportExcel()">📤 导出Excel</button>
     <button class="btn" onclick="document.getElementById('importInput').click()">📥 导入Excel</button>
     <input type="file" id="importInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
     <span class="selected-count" id="selectedCount"></span>
   </div>
 </div>
-
 <div class="main">
   <div class="stats-bar" id="statsBar">
     <div class="stat-card"><div class="stat-label">总故障数</div><div class="stat-value accent" id="statTotal">0</div></div>
@@ -153,8 +151,7 @@ body::before{
     <div class="stat-card"><div class="stat-label">自检</div><div class="stat-value green" id="statSelfCheck">0</div></div>
     <div class="stat-card"><div class="stat-label">非自检</div><div class="stat-value danger" id="statNotSelfCheck">0</div></div>
   </div>
-
-  <div class="toolbar-bar">
+  <div class="toolbar">
     <input type="text" id="filterLine" placeholder="筛选线路" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px;width:120px">
     <input type="text" id="filterDept" placeholder="筛选部门" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px;width:120px">
     <select id="filterSelfCheck" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px">
@@ -166,7 +163,6 @@ body::before{
     <button class="btn btn-sm" onclick="doFilter()">筛选</button>
     <button class="btn btn-sm" onclick="resetFilter()">重置</button>
   </div>
-
   <div class="table-wrapper">
     <table class="data-table" id="dataTable">
       <thead><tr id="tableHeader"></tr></thead>
@@ -178,7 +174,6 @@ body::before{
     <p>暂无数据，点击「＋ 新增故障」或「导入Excel」开始</p>
   </div>
 </div>
-
 <!-- 新增/编辑弹窗 -->
 <div class="modal-overlay" id="editModal">
   <div class="modal">
@@ -255,7 +250,17 @@ body::before{
     </div>
   </div>
 </div>
-
+<!-- 字段管理弹窗 -->
+<div class="modal-overlay" id="fieldModal">
+  <div class="modal" style="width:500px">
+    <h2>字段管理</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">显示/隐藏字段 | 设置字段类型</p>
+    <div class="field-list" id="fieldList"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeFieldManager()">关闭</button>
+    </div>
+  </div>
+</div>
 <script>
 const API = '';
 let TOKEN = localStorage.getItem('gd_token') || '';
@@ -263,26 +268,37 @@ let allData = [];
 let filteredData = [];
 let selectedIds = new Set();
 let editingId = null;
-
-const COLUMNS = [
-  {label:'日期',       key:'date',             width:'100px'},
-  {label:'线路',       key:'line',             width:'80px'},
-  {label:'故障点',     key:'fault_point',       width:'120px'},
-  {label:'设备名称',   key:'device_name',       width:'120px'},
-  {label:'故障描述',   key:'fault_desc',        width:'200px'},
-  {label:'故障类型',   key:'fault_type',        width:'100px'},
-  {label:'部门',       key:'dept',             width:'100px'},
-  {label:'责任班组',   key:'duty_team',         width:'100px'},
-  {label:'维修单位',   key:'repair_unit',       width:'100px'},
-  {label:'维修状态',   key:'repair_status',     width:'90px'},
-  {label:'故障等级',   key:'fault_level',       width:'90px'},
-  {label:'自检',       key:'self_check',        width:'80px'},
-  {label:'填报人',     key:'reporter',          width:'80px'},
-  {label:'报修时间',   key:'report_time',       width:'140px'},
-  {label:'到达时间',   key:'arrive_time',       width:'140px'},
-  {label:'修复时间',   key:'fix_time',          width:'140px'},
-  {label:'响应(分钟)', key:'response_min',      width:'90px'},
+// 所有可用字段定义
+const ALL_COLUMNS = [
+  {label:'日期',       key:'date',             type:'date',       visible:true},
+  {label:'线路',       key:'line',             type:'text',       visible:true},
+  {label:'故障点',     key:'fault_point',       type:'text',       visible:true},
+  {label:'设备名称',   key:'device_name',       type:'text',       visible:true},
+  {label:'故障描述',   key:'fault_desc',        type:'text',       visible:true},
+  {label:'故障类型',   key:'fault_type',        type:'text',       visible:true},
+  {label:'部门',       key:'dept',             type:'text',       visible:true},
+  {label:'责任班组',   key:'duty_team',         type:'text',       visible:true},
+  {label:'维修单位',   key:'repair_unit',       type:'text',       visible:true},
+  {label:'维修状态',   key:'repair_status',     type:'select',     visible:true, options:['未处理','处理中','已修复','无法修复']},
+  {label:'故障等级',   key:'fault_level',       type:'select',     visible:true, options:['一级','二级','三级']},
+  {label:'自检',       key:'self_check',        type:'select',     visible:true, options:['自检','非自检']},
+  {label:'填报人',     key:'reporter',          type:'text',       visible:true},
+  {label:'报修时间',   key:'report_time',       type:'datetime',   visible:true},
+  {label:'到达时间',   key:'arrive_time',       type:'datetime',   visible:true},
+  {label:'修复时间',   key:'fix_time',          type:'datetime',   visible:true},
+  {label:'响应(分钟)', key:'response_min',      type:'number',     visible:true},
+  {label:'维修措施',   key:'repair_measure',    type:'text',       visible:false},
+  {label:'故障经过',   key:'fault_process',     type:'text',       visible:false},
+  {label:'报修单位',   key:'report_unit',       type:'text',       visible:false},
+  {label:'应急状态',   key:'emergency_status',  type:'text',       visible:false},
+  {label:'工单号',     key:'order_no',          type:'text',       visible:false},
+  {label:'登记地点',   key:'register_loc',      type:'text',       visible:false},
 ];
+
+// 获取当前可见字段
+function getVisibleColumns(){
+  return ALL_COLUMNS.filter(c => c.visible);
+}
 
 function authHeaders(){
   return {'Authorization':'Bearer '+TOKEN, 'Content-Type':'application/json'};
@@ -306,28 +322,30 @@ function renderTable(){
   const thead = document.getElementById('tableHeader');
   const tbody = document.getElementById('tableBody');
   const empty = document.getElementById('emptyState');
-
+  
+  const visibleCols = getVisibleColumns();
+  
   thead.innerHTML =
     '<th style="width:40px"><input type="checkbox" class="cell-checkbox" onclick="toggleSelectAll(this)"></th>' +
-    COLUMNS.map(c => '<th style="min-width:'+c.width+'" title="'+c.label+'">'+c.label+'</th>').join('') +
+    visibleCols.map(c => '<th title="'+c.label+'">'+c.label+'</th>').join('') +
     '<th style="width:80px">操作</th>';
-
+  
   if(filteredData.length===0){
     tbody.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
-
+  
   tbody.innerHTML = filteredData.map(row => {
     const isSelected = selectedIds.has(row.id);
     return '<tr class="'+(isSelected?'selected':'')+'">' +
       '<td><input type="checkbox" class="cell-checkbox" '+(isSelected?'checked':'')+' onchange="toggleSelect('+row.id+',this.checked)"></td>' +
-      COLUMNS.map(c => {
+      visibleCols.map(c => {
         const val = row[c.key] || '';
-        return '<td title="'+escH(val)+'" onclick="makeEditable(this,'+row.id+',''+c.key+'')">'+escH(val)+'</td>';
+        return '<td title="'+escH(val)+'">'+escH(val)+'</td>';
       }).join('') +
-      '<td><button class="btn btn-sm" onclick="editRecord('+row.id+')">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteOne('+row.id+')">🗑</button></td>' +
+      '<td><button class="btn btn-sm" onclick="editRecord('+row.id+')">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteOne('+row.id+')">🗑️</button></td>' +
     '</tr>';
   }).join('');
 }
@@ -342,46 +360,6 @@ function renderStats(){
   document.getElementById('statMonth').textContent = thisMonth;
   document.getElementById('statSelfCheck').textContent = selfCheck;
   document.getElementById('statNotSelfCheck').textContent = notSelfCheck;
-}
-
-/* 单元格编辑 */
-let editingCell = null;
-function makeEditable(td, id, field){
-  if(editingCell === td) return;
-  if(editingCell) cancelEdit();
-  editingCell = td;
-  const original = td.textContent;
-  td.setAttribute('contenteditable','true');
-  td.focus();
-  const range = document.createRange();
-  range.selectNodeContents(td);
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-  td.onblur = async ()=>{
-    const newVal = td.textContent.trim();
-    if(newVal !== original){ await updateField(id, field, newVal); }
-    cancelEdit();
-  };
-  td.onkeydown = (e)=>{
-    if(e.key==='Enter'){ e.preventDefault(); td.blur(); }
-    if(e.key==='Escape'){ td.textContent = original; td.blur(); }
-  };
-}
-function cancelEdit(){
-  if(editingCell){
-    editingCell.removeAttribute('contenteditable');
-    editingCell.onblur = null;
-    editingCell.onkeydown = null;
-    editingCell = null;
-  }
-}
-async function updateField(id, field, value){
-  const resp = await fetch('/api/faults/'+id, {
-    method:'PUT', headers:authHeaders(),
-    body: JSON.stringify({[field]: value})
-  });
-  if(resp.ok) loadData();
 }
 
 /* 选择 */
@@ -427,7 +405,7 @@ function clearForm(){
     'f_fault_type','f_dept','f_duty_team','f_repair_unit','f_repair_status',
     'f_fault_level','f_self_check','f_reporter','f_report_time',
     'f_arrive_time','f_fix_time','f_response_min','f_repair_measure',
-    'f_fault_process','f_report_unit','f_emergency_status','f_order_no','f_register_loc'];
+    'f_fault_process','f_report_unit','f_emergency_status','f_order_no','f_register_loc'];  
   ids.forEach(id => {
     const el = document.getElementById(id);
     if(el) el.tagName==='SELECT' ? el.selectedIndex=0 : el.value='';
@@ -497,7 +475,7 @@ async function saveRecord(){
     register_loc:    document.getElementById('f_register_loc').value,
   };
   Object.keys(data).forEach(k=>{if(data[k]==='') delete data[k];});
-
+  
   let resp;
   if(editingId){
     resp = await fetch('/api/faults/'+editingId, {
@@ -540,13 +518,15 @@ function doFilter(){
   const deptVal = document.getElementById('filterDept').value.trim().toLowerCase();
   const scVal   = document.getElementById('filterSelfCheck').value;
   const kw      = document.getElementById('filterKeyword').value.trim().toLowerCase();
-
+  
+  const visibleCols = getVisibleColumns();
+  
   filteredData = allData.filter(row => {
     if(lineVal && !(row.line||'').toLowerCase().includes(lineVal)) return false;
     if(deptVal && !(row.dept||'').toLowerCase().includes(deptVal)) return false;
     if(scVal   && row.self_check!==scVal) return false;
     if(kw) {
-      const allText = COLUMNS.map(c=>row[c.key]||'').join(' ').toLowerCase();
+      const allText = visibleCols.map(c=>row[c.key]||'').join(' ').toLowerCase();
       if(!allText.includes(kw)) return false;
     }
     return true;
@@ -564,6 +544,35 @@ function resetFilter(){
   selectedIds.clear();
   renderTable();
   updateSelection();
+}
+
+/* 字段管理 */
+function showFieldManager(){
+  const fieldList = document.getElementById('fieldList');
+  fieldList.innerHTML = ALL_COLUMNS.map((c,i) => \`
+    <div class="field-item">
+      <input type="checkbox" ${c.visible?'checked':''} onchange="toggleFieldVisibility(${i},this.checked)">
+      <label>${c.label} (${c.key})</label>
+      <select onchange="changeFieldType(${i},this.value)">
+        <option value="text" ${c.type==='text'?'selected':''}>文本</option>
+        <option value="number" ${c.type==='number'?'selected':''}>数字</option>
+        <option value="date" ${c.type==='date'?'selected':''}>日期</option>
+        <option value="datetime" ${c.type==='datetime'?'selected':''}>日期时间</option>
+        <option value="select" ${c.type==='select'?'selected':''}>下拉选择</option>
+      </select>
+    </div>
+  \`).join('');
+  document.getElementById('fieldModal').classList.add('active');
+}
+function closeFieldManager(){
+  document.getElementById('fieldModal').classList.remove('active');
+}
+function toggleFieldVisibility(index, visible){
+  ALL_COLUMNS[index].visible = visible;
+  renderTable();
+}
+function changeFieldType(index, type){
+  ALL_COLUMNS[index].type = type;
 }
 
 /* 导出 */

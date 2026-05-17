@@ -282,7 +282,7 @@ body.logged-in .login-page{display:none}
       <h1>工电中心一体化平台</h1>
     </div>
     <div class="header-right">
-      <button class="btn btn-primary" id="btnFaultMgr" onclick="showFaultManager()">📊 故障管理</button>
+      <button class="btn btn-primary" id="btnFaultMgr" onclick="window.open('/fault-table.html','_blank')">📊 故障管理</button>
       <span class="user-badge">
         <span id="headerUser"></span>
         <span class="role-tag" id="headerRole"></span>
@@ -302,13 +302,6 @@ body.logged-in .login-page{display:none}
       <p>暂无模块，点击「新增模块」开始构建平台</p>
     </div>
     <div id="modulesContainer"></div>
-    <div id="faultManagerContainer" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h2 style="font-size:16px;font-weight:600;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">故障数据管理</h2>
-        <button class="btn btn-sm" onclick="hideFaultManager()">✕ 关闭</button>
-      </div>
-      <iframe id="faultFrame"></iframe>
-    </div>
   </div>
 </div>
 
@@ -942,19 +935,6 @@ function parseCSVLine(line){
 }
 
 // ── 故障管理内嵌 ─────────────────────────────────────
-function showFaultManager(){
-  document.getElementById('modulesContainer').style.display='none';
-  document.getElementById('emptyState').style.display='none';
-  document.getElementById('faultManagerContainer').style.display='block';
-  const frame = document.getElementById('faultFrame');
-  frame.src = '/fault-table.html';
-  frame.style.height = (window.innerHeight - 180) + 'px';
-}
-function hideFaultManager(){
-  document.getElementById('faultManagerContainer').style.display='none';
-  document.getElementById('faultFrame').src = '';
-  render();
-}
 </script>
 </body>
 </html>
