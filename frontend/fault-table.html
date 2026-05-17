@@ -26,10 +26,10 @@ body::before{
     linear-gradient(90deg,rgba(79,172,254,0.03) 1px,transparent 1px);
   background-size:60px 60px;
 }
-
 .header{
   position:sticky;top:0;z-index:100;
   backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
   background:rgba(10,14,26,0.9);
   border-bottom:1px solid var(--border);
   padding:10px 20px;display:flex;align-items:center;justify-content:space-between;
@@ -38,7 +38,6 @@ body::before{
   background:linear-gradient(90deg,var(--accent),var(--accent2));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-
 .btn{
   padding:6px 14px;border-radius:8px;border:1px solid var(--border);
   background:var(--card-bg);color:var(--text);cursor:pointer;
@@ -52,7 +51,6 @@ body::before{
 .btn-danger{border-color:rgba(255,82,82,0.3);color:var(--danger)}
 .btn-danger:hover{border-color:var(--danger);background:rgba(255,82,82,0.1)}
 .btn-sm{padding:4px 10px;font-size:11px}
-
 .main{padding:16px 20px;position:relative;z-index:1}
 
 /* 统计卡片 */
@@ -77,9 +75,10 @@ body::before{
   overflow-x:auto;
   border:1px solid var(--border);border-radius:12px;
   background:var(--card-bg);backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
 }
 
-/* 多维表格 */
+/* 数据表格 */
 .data-table{width:100%;border-collapse:collapse;min-width:1800px}
 .data-table thead th{
   position:sticky;top:0;z-index:10;
@@ -90,8 +89,6 @@ body::before{
   cursor:pointer;user-select:none;
 }
 .data-table th:hover{background:rgba(79,172,254,0.13)}
-.data-table th .th-actions{display:none;margin-left:4px}
-.data-table th:hover .th-actions{display:inline}
 .data-table td{
   border-right:1px solid rgba(100,140,255,0.08);
   border-bottom:1px solid rgba(100,140,255,0.08);
@@ -100,22 +97,13 @@ body::before{
 }
 .data-table tr:hover td{background:rgba(79,172,254,0.04)}
 .data-table tr.selected td{background:rgba(79,172,254,0.1)}
-.data-table td[contenteditable="true"]{
-  background:rgba(79,172,254,0.08);
-  outline:2px solid var(--accent);outline-offset:-2px;
-  border-radius:4px;
-}
 .cell-checkbox{width:18px;height:18px;cursor:pointer}
-.add-col-header{
-  min-width:36px;cursor:pointer;color:var(--text2);
-  font-size:18px;transition:color .2s;
-}
-.add-col-header:hover{color:var(--accent)}
 
 /* 弹窗 */
 .modal-overlay{
   position:fixed;inset:0;z-index:2000;
   background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
   display:none;align-items:center;justify-content:center;
 }
 .modal-overlay.active{display:flex}
@@ -139,9 +127,7 @@ body::before{
 .form-row{display:flex;gap:10px;flex-wrap:wrap}
 .form-row .form-group{flex:1;min-width:150px}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
-
 .selected-count{font-size:12px;color:var(--accent);margin-left:8px}
-
 @media(max-width:768px){.main{padding:10px}}
 </style>
 </head>
@@ -161,7 +147,6 @@ body::before{
 </div>
 
 <div class="main">
-  <!-- 统计看板 -->
   <div class="stats-bar" id="statsBar">
     <div class="stat-card"><div class="stat-label">总故障数</div><div class="stat-value accent" id="statTotal">0</div></div>
     <div class="stat-card"><div class="stat-label">本月故障</div><div class="stat-value orange" id="statMonth">0</div></div>
@@ -169,7 +154,6 @@ body::before{
     <div class="stat-card"><div class="stat-label">非自检</div><div class="stat-value danger" id="statNotSelfCheck">0</div></div>
   </div>
 
-  <!-- 筛选栏 -->
   <div class="toolbar-bar">
     <input type="text" id="filterLine" placeholder="筛选线路" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px;width:120px">
     <input type="text" id="filterDept" placeholder="筛选部门" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(10,14,26,0.8);color:var(--text);font-size:12px;width:120px">
@@ -183,7 +167,6 @@ body::before{
     <button class="btn btn-sm" onclick="resetFilter()">重置</button>
   </div>
 
-  <!-- 数据表格 -->
   <div class="table-wrapper">
     <table class="data-table" id="dataTable">
       <thead><tr id="tableHeader"></tr></thead>
@@ -274,39 +257,40 @@ body::before{
 </div>
 
 <script>
-// ─── 配置 ─────────────────────────────────────────────────────
-const API = '';  // 同域时为空
+const API = '';
 let TOKEN = localStorage.getItem('gd_token') || '';
 let allData = [];
 let filteredData = [];
 let selectedIds = new Set();
 let editingId = null;
 
-// 表格列定义（中文字段名 → 数据库字段名）
 const COLUMNS = [
-  {label:'日期',       key:'date',              width:'100px'},
-  {label:'线路',       key:'line',              width:'80px'},
-  {label:'故障点',     key:'fault_point',        width:'120px'},
-  {label:'设备名称',   key:'device_name',        width:'120px'},
-  {label:'故障描述',   key:'fault_desc',         width:'200px'},
-  {label:'故障类型',   key:'fault_type',         width:'100px'},
-  {label:'部门',       key:'dept',              width:'100px'},
-  {label:'责任班组',   key:'duty_team',          width:'100px'},
-  {label:'维修单位',   key:'repair_unit',        width:'100px'},
-  {label:'维修状态',   key:'repair_status',      width:'90px'},
-  {label:'故障等级',   key:'fault_level',        width:'90px'},
-  {label:'自检',       key:'self_check',         width:'80px'},
-  {label:'填报人',     key:'reporter',           width:'80px'},
-  {label:'报修时间',   key:'report_time',        width:'140px'},
-  {label:'到达时间',   key:'arrive_time',        width:'140px'},
-  {label:'修复时间',   key:'fix_time',           width:'140px'},
-  {label:'响应(分钟)', key:'response_min',       width:'90px'},
+  {label:'日期',       key:'date',             width:'100px'},
+  {label:'线路',       key:'line',             width:'80px'},
+  {label:'故障点',     key:'fault_point',       width:'120px'},
+  {label:'设备名称',   key:'device_name',       width:'120px'},
+  {label:'故障描述',   key:'fault_desc',        width:'200px'},
+  {label:'故障类型',   key:'fault_type',        width:'100px'},
+  {label:'部门',       key:'dept',             width:'100px'},
+  {label:'责任班组',   key:'duty_team',         width:'100px'},
+  {label:'维修单位',   key:'repair_unit',       width:'100px'},
+  {label:'维修状态',   key:'repair_status',     width:'90px'},
+  {label:'故障等级',   key:'fault_level',       width:'90px'},
+  {label:'自检',       key:'self_check',        width:'80px'},
+  {label:'填报人',     key:'reporter',          width:'80px'},
+  {label:'报修时间',   key:'report_time',       width:'140px'},
+  {label:'到达时间',   key:'arrive_time',       width:'140px'},
+  {label:'修复时间',   key:'fix_time',          width:'140px'},
+  {label:'响应(分钟)', key:'response_min',      width:'90px'},
 ];
 
-// ─── 初始化 ───────────────────────────────────────────────────
+function authHeaders(){
+  return {'Authorization':'Bearer '+TOKEN, 'Content-Type':'application/json'};
+}
+
+// 初始化
 loadData();
 
-// ─── 加载数据 ────────────────────────────────────────────────
 async function loadData(){
   try {
     const resp = await fetch('/api/faults', {headers:authHeaders()});
@@ -318,20 +302,14 @@ async function loadData(){
   } catch(e) { console.error('加载数据出错', e); }
 }
 
-function authHeaders(){
-  return {'Authorization':'Bearer '+TOKEN, 'Content-Type':'application/json'};
-}
-
-// ─── 渲染表格 ────────────────────────────────────────────────
 function renderTable(){
   const thead = document.getElementById('tableHeader');
   const tbody = document.getElementById('tableBody');
   const empty = document.getElementById('emptyState');
 
-  // 表头
   thead.innerHTML =
     '<th style="width:40px"><input type="checkbox" class="cell-checkbox" onclick="toggleSelectAll(this)"></th>' +
-    COLUMNS.map(c => `<th style="min-width:${c.width}" title="${c.label}">${c.label}</th>`).join('') +
+    COLUMNS.map(c => '<th style="min-width:'+c.width+'" title="'+c.label+'">'+c.label+'</th>').join('') +
     '<th style="width:80px">操作</th>';
 
   if(filteredData.length===0){
@@ -347,14 +325,13 @@ function renderTable(){
       '<td><input type="checkbox" class="cell-checkbox" '+(isSelected?'checked':'')+' onchange="toggleSelect('+row.id+',this.checked)"></td>' +
       COLUMNS.map(c => {
         const val = row[c.key] || '';
-        return '<td title="'+escH(val)+'" onclick="makeEditable(this,'+row.id+',\''+c.key+'\')">'+escH(val)+'</td>';
+        return '<td title="'+escH(val)+'" onclick="makeEditable(this,'+row.id+',''+c.key+'')">'+escH(val)+'</td>';
       }).join('') +
-      '<td><button class="btn btn-sm" onclick="editRecord('+row.id+')">✏</button> <button class="btn btn-sm btn-danger" onclick="deleteOne('+row.id+')">🗑</button></td>' +
+      '<td><button class="btn btn-sm" onclick="editRecord('+row.id+')">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteOne('+row.id+')">🗑</button></td>' +
     '</tr>';
   }).join('');
 }
 
-// ─── 统计 ─────────────────────────────────────────────────────
 function renderStats(){
   const total = allData.length;
   const now = new Date();
@@ -367,7 +344,7 @@ function renderStats(){
   document.getElementById('statNotSelfCheck').textContent = notSelfCheck;
 }
 
-// ─── 单元格编辑 ──────────────────────────────────────────────
+/* 单元格编辑 */
 let editingCell = null;
 function makeEditable(td, id, field){
   if(editingCell === td) return;
@@ -376,18 +353,14 @@ function makeEditable(td, id, field){
   const original = td.textContent;
   td.setAttribute('contenteditable','true');
   td.focus();
-  // 选中文字
   const range = document.createRange();
   range.selectNodeContents(td);
   const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
-
   td.onblur = async ()=>{
     const newVal = td.textContent.trim();
-    if(newVal !== original){
-      await updateField(id, field, newVal);
-    }
+    if(newVal !== original){ await updateField(id, field, newVal); }
     cancelEdit();
   };
   td.onkeydown = (e)=>{
@@ -411,7 +384,7 @@ async function updateField(id, field, value){
   if(resp.ok) loadData();
 }
 
-// ─── 选择 ─────────────────────────────────────────────────────
+/* 选择 */
 function toggleSelect(id, checked){
   if(checked) selectedIds.add(id); else selectedIds.delete(id);
   updateSelection();
@@ -427,10 +400,10 @@ function toggleSelectAll(el){
 function updateSelection(){
   const n = selectedIds.size;
   document.getElementById('btnDelete').style.display = n>0?'inline-flex':'none';
-  document.getElementById('selectedCount').textContent = n>0?`已选 ${n} 条`:'';
+  document.getElementById('selectedCount').textContent = n>0?'已选 '+n+' 条':'';
 }
 
-// ─── 新增/编辑弹窗 ────────────────────────────────────────────
+/* 新增/编辑弹窗 */
 function showAddModal(){
   editingId = null;
   document.getElementById('editModalTitle').textContent = '新增故障记录';
@@ -461,31 +434,31 @@ function clearForm(){
   });
 }
 function fillForm(row){
-  setValue('f_date',             row.date||'');
-  setValue('f_line',            row.line||'');
-  setValue('f_fault_point',     row.fault_point||'');
-  setValue('f_device_name',     row.device_name||'');
-  setValue('f_fault_desc',      row.fault_desc||'');
-  setValue('f_fault_type',      row.fault_type||'');
-  setValue('f_dept',            row.dept||'');
-  setValue('f_duty_team',       row.duty_team||'');
-  setValue('f_repair_unit',     row.repair_unit||'');
-  setValue('f_repair_status',   row.repair_status||'');
-  setValue('f_fault_level',     row.fault_level||'');
-  setValue('f_self_check',       row.self_check||'');
-  setValue('f_reporter',        row.reporter||'');
-  setValue('f_report_time',      row.report_time||'');
-  setValue('f_arrive_time',     row.arrive_time||'');
-  setValue('f_fix_time',        row.fix_time||'');
-  setValue('f_response_min',     row.response_min||'');
-  setValue('f_repair_measure',  row.repair_measure||'');
-  setValue('f_fault_process',   row.fault_process||'');
-  setValue('f_report_unit',     row.report_unit||'');
-  setValue('f_emergency_status',row.emergency_status||'');
-  setValue('f_order_no',        row.order_no||'');
-  setValue('f_register_loc',    row.register_loc||'');
+  setVal('f_date',             row.date||'');
+  setVal('f_line',            row.line||'');
+  setVal('f_fault_point',     row.fault_point||'');
+  setVal('f_device_name',     row.device_name||'');
+  setVal('f_fault_desc',      row.fault_desc||'');
+  setVal('f_fault_type',      row.fault_type||'');
+  setVal('f_dept',            row.dept||'');
+  setVal('f_duty_team',       row.duty_team||'');
+  setVal('f_repair_unit',     row.repair_unit||'');
+  setVal('f_repair_status',   row.repair_status||'');
+  setVal('f_fault_level',     row.fault_level||'');
+  setVal('f_self_check',       row.self_check||'');
+  setVal('f_reporter',        row.reporter||'');
+  setVal('f_report_time',      row.report_time||'');
+  setVal('f_arrive_time',     row.arrive_time||'');
+  setVal('f_fix_time',        row.fix_time||'');
+  setVal('f_response_min',     row.response_min||'');
+  setVal('f_repair_measure',  row.repair_measure||'');
+  setVal('f_fault_process',   row.fault_process||'');
+  setVal('f_report_unit',     row.report_unit||'');
+  setVal('f_emergency_status',row.emergency_status||'');
+  setVal('f_order_no',        row.order_no||'');
+  setVal('f_register_loc',    row.register_loc||'');
 }
-function setValue(id, val){
+function setVal(id, val){
   const el = document.getElementById(id);
   if(!el) return;
   if(el.tagName==='SELECT'){
@@ -523,8 +496,7 @@ async function saveRecord(){
     order_no:        document.getElementById('f_order_no').value,
     register_loc:    document.getElementById('f_register_loc').value,
   };
-  // 清除空值
-  Object.keys(data).forEach(k=>{if(data[k]==='') delete data[k]});
+  Object.keys(data).forEach(k=>{if(data[k]==='') delete data[k];});
 
   let resp;
   if(editingId){
@@ -546,7 +518,7 @@ async function saveRecord(){
   }
 }
 
-// ─── 删除 ─────────────────────────────────────────────────────
+/* 删除 */
 async function deleteOne(id){
   if(!confirm('确认删除该条记录？')) return;
   const resp = await fetch('/api/faults/'+id, {method:'DELETE',headers:authHeaders()});
@@ -554,7 +526,7 @@ async function deleteOne(id){
 }
 async function deleteSelected(){
   if(selectedIds.size===0) return;
-  if(!confirm(`确认删除选中的 ${selectedIds.size} 条记录？`)) return;
+  if(!confirm('确认删除选中的 '+selectedIds.size+' 条记录？')) return;
   for(const id of selectedIds){
     await fetch('/api/faults/'+id, {method:'DELETE',headers:authHeaders()});
   }
@@ -562,7 +534,7 @@ async function deleteSelected(){
   loadData();
 }
 
-// ─── 筛选 ─────────────────────────────────────────────────────
+/* 筛选 */
 function doFilter(){
   const lineVal = document.getElementById('filterLine').value.trim().toLowerCase();
   const deptVal = document.getElementById('filterDept').value.trim().toLowerCase();
@@ -594,12 +566,12 @@ function resetFilter(){
   updateSelection();
 }
 
-// ─── 导出 Excel ───────────────────────────────────────────────
+/* 导出 */
 function exportExcel(){
   window.open('/api/faults/export?token='+TOKEN, '_blank');
 }
 
-// ─── 导入 Excel ───────────────────────────────────────────────
+/* 导入 */
 async function importExcel(input){
   const file = input.files[0];
   if(!file){ alert('请选择 Excel 文件'); return; }
@@ -618,7 +590,6 @@ async function importExcel(input){
   input.value = '';
 }
 
-// ─── 工具 ─────────────────────────────────────────────────────
 function escH(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 </script>
 </body>
